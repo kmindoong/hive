@@ -11,14 +11,16 @@
 
     > https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
 - Local PC hosts 에 hostname 등록
+
+    `127.0.0.1 sandbox-hdp.hortonworks.com`  
+    
     - for windows
 
         > C:\Windows\System32\drivers\etc\hosts 파일 수정
 
     - for mac or linux
 
-        > /etc/hosts
-    `127.0.0.1 sandbox-hdp.hortonworks.com`   
+        > /etc/hosts 
     
 - HDP 샌드박스에 ssh 접속 (putty)
     - ssh 접속정보
