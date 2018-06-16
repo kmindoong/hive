@@ -43,6 +43,8 @@
     $ passwd hdfs
     $ su - hdfs
     ```
+- 실습에 필요한 소스 다운로드
+    - git clone https://github.com/kmindoong/hive.git
 
 <br>
 
@@ -50,6 +52,7 @@
 - Ambari 접속 (Web browser)
 
     > http://sandbox-hdp.hortonworks.com:8080 (raj_ops / raj_ops)
+    
 - Hadoop Eco 구동
     - HDFS
         - Maintenance mode off
