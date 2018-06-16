@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow-app xmlns="uri:oozie:workflow:0.5" name="MORD_GIFT">
+	<start to="inputChkfile_check" />
+	<action name="inputChkfile_check" retry-max="30" retry-interval="5">
+		<fs>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_01.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_02.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_03.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_04.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_05.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_06.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+			<chmod path="${nameNode}/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}/MORD_GIFT_${getDate(-1,'yyyyMMdd')}_07.chk" permissions='-rwxrw-rw-' dir-files='false'></chmod>
+		</fs>
+		<ok to="hive-node" />
+		<error to="chkNotExistLog" />
+	</action>
+	<action name="hive-node">
+		<hive xmlns="uri:oozie:hive-action:0.2">
+			<job-tracker>${jobTracker}</job-tracker>
+			<name-node>${nameNode}</name-node>
+			<job-xml>/user/hdfs/share/lib/hive-site.xml</job-xml>
+			<configuration>
+				<property>
+					<name>mapred.job.queue.name</name>
+					<value>${queueName}</value>
+				</property>
+			</configuration>
+			<script>script.q</script>
+			<param>jobTracker=${jobTracker}</param>
+			<param>hdfs=${nameNode}</param>
+			<param>yesterday_hms=${getDate(-1,'yyyyMMddHHmmss')}</param>
+                        <param>yesterday=${getDate(-1,'yyyyMMdd')}</param>
+			<param>cdc_path=/mdw/cdc/raw/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}
+			</param>
+			<param>duplication_path=/mdw/cdc/etl/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}
+			</param>
+			<param>output_path=/mdw/result/original/ukey/MORD_GIFT/${getDate(-1,'yyyyMMdd')}
+			</param>
+		</hive>
+		<ok to="finish" />
+		<error to="fail" />
+	</action>
+	<action name="finish">
+		<fs>
+			<mkdir path="${nameNode}/mdw/check/ukey/MORD_GIFT"/>
+			<mkdir path="${nameNode}/mdw/check/ukey/MORD_GIFT/${getDate(0,'yyyyMMdd')}"/>
+			<touchz	path="${nameNode}/mdw/check/ukey/MORD_GIFT/${getDate(0,'yyyyMMdd')}/MORD_GIFT_${getDate(0,'yyyyMMdd')}.chk" />
+		</fs>
+		<ok to="OkLog" />
+		<error to="chkCannotMakeError" />
+	</action>
+	
+	<action name="OkLog">
+		<log xmlns="uri:oozie:log-action:0.5">
+			<logJobId>JU-DW-LOD-OOZ-#{LOG_INDEX}</logJobId>
+			<logJobName>HADOOP_JOB_MORD_GIFT</logJobName>
+			<logPgId>PU-DW-CHG-HIV-#{LOG_INDEX}</logPgId>
+			<logPgName>HIVE_PROGRAM_MORD_GIFT</logPgName>
+			<tableName>MORD_GIFT</tableName>
+			<oozieId>${wf:id()}</oozieId>
+			<success>Y</success>
+			<errorCode></errorCode>
+			<errorMassage></errorMassage>
+			<jobCounterURL>${historyServerUrl}/ws/v1/history/mapreduce/jobs/#{hadoopJobid}/counters</jobCounterURL>
+			<jobCountActionName>${printLastJobID(wf:actionData('hive-node'))}</jobCountActionName>
+			<pgLogPath>/mdw/logs/hdo/ukey/pgm/${getDate(0,'yyyyMMdd')}/HDO_PGM_LOG_#{LOG_PG_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</pgLogPath>
+			<jobLogPath>/mdw/logs/hdo/ukey/job/${getDate(0,'yyyyMMdd')}/HDO_JOB_LOG_#{LOG_JOB_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</jobLogPath>
+			<dataDate>${getDate(-1,'yyyyMMdd')}</dataDate>
+			<isAppend>false</isAppend>
+			<isPgLog>true</isPgLog>
+			<isJobLog>true</isJobLog>
+			<programListPath>${nameNode}/OOZIE/META/ukey_programlist</programListPath>
+		</log>
+		<ok to="end" />
+		<error to="end" />
+	</action>
+	<action name="chkNotExistLog">
+		<log xmlns="uri:oozie:log-action:0.5">
+			<logJobId>JU-DW-LOD-OOZ-#{LOG_INDEX}</logJobId>
+			<logJobName>HADOOP_JOB_MORD_GIFT</logJobName>
+			<logPgId>PU-DW-CHG-HIV-#{LOG_INDEX}</logPgId>
+			<logPgName>HIVE_PROGRAM_MORD_GIFT</logPgName>
+			<tableName>MORD_GIFT</tableName>
+			<oozieId>${wf:id()}</oozieId>
+			<success>N</success>
+			<errorCode>03</errorCode>
+			<errorMassage>input check file not exist</errorMassage>
+			<jobCounterURL></jobCounterURL>
+			<jobCountActionName></jobCountActionName>
+			<pgLogPath>/mdw/logs/hdo/ukey/pgm/${getDate(0,'yyyyMMdd')}/HDO_PGM_LOG_#{LOG_PG_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</pgLogPath>
+			<jobLogPath>/mdw/logs/hdo/ukey/job/${getDate(0,'yyyyMMdd')}/HDO_JOB_LOG_#{LOG_JOB_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</jobLogPath>
+			<dataDate>${getDate(-1,'yyyyMMdd')}</dataDate>
+			<isAppend>false</isAppend>
+			<isPgLog>true</isPgLog>
+			<isJobLog>true</isJobLog>
+			<retryActionName>inputChkfile_check</retryActionName>
+			<programListPath>${nameNode}/OOZIE/META/ukey_programlist</programListPath>
+		</log>
+		<ok to="inputNotExistKill" />
+		<error to="fail" />
+	</action>
+	<action name="inputFileNotExistLog">
+		<log xmlns="uri:oozie:log-action:0.5">
+			<logJobId>JU-DW-LOD-OOZ-#{LOG_INDEX}</logJobId>
+			<logJobName>HADOOP_JOB_MORD_GIFT</logJobName>
+			<logPgId>PU-DW-CHG-HIV-#{LOG_INDEX}</logPgId>
+			<logPgName>HIVE_PROGRAM_MORD_GIFT</logPgName>
+			<tableName>MORD_GIFT</tableName>
+			<oozieId>${wf:id()}</oozieId>
+			<success>N</success>
+			<errorCode>03</errorCode>
+			<errorMassage>input file not exist</errorMassage>
+			<jobCounterURL></jobCounterURL>
+			<jobCountActionName></jobCountActionName>
+			<pgLogPath>/mdw/logs/hdo/ukey/pgm/${getDate(0,'yyyyMMdd')}/HDO_PGM_LOG_#{LOG_PG_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</pgLogPath>
+			<jobLogPath>/mdw/logs/hdo/ukey/job/${getDate(0,'yyyyMMdd')}/HDO_JOB_LOG_#{LOG_JOB_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</jobLogPath>
+			<dataDate>${getDate(-1,'yyyyMMdd')}</dataDate>
+			<isAppend>false</isAppend>
+			<isPgLog>true</isPgLog>
+			<isJobLog>true</isJobLog>
+			<retryActionName>inputfile_check</retryActionName>
+			<programListPath>${nameNode}/OOZIE/META/ukey_programlist</programListPath>
+		</log>
+		<ok to="inputNotExistKill" />
+		<error to="fail" />
+	</action>
+	<action name="chkCannotMakeError">
+		<log xmlns="uri:oozie:log-action:0.5">
+			<logJobId>JU-DW-LOD-OOZ-#{LOG_INDEX}</logJobId>
+			<logJobName>HADOOP_JOB_MORD_GIFT</logJobName>
+			<logPgId>PU-DW-CHG-HIV-#{LOG_INDEX}</logPgId>
+			<logPgName>HIVE_PROGRAM_MORD_GIFT</logPgName>
+			<tableName>MORD_GIFT</tableName>
+			<oozieId>${wf:id()}</oozieId>
+			<success>N</success>
+			<errorCode>26</errorCode>
+			<errorMassage>can not create chk file</errorMassage>
+			<jobCounterURL></jobCounterURL>
+			<jobCountActionName></jobCountActionName>
+			<pgLogPath>/mdw/logs/hdo/ukey/pgm/${getDate(0,'yyyyMMdd')}/HDO_PGM_LOG_#{LOG_PG_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</pgLogPath>
+			<jobLogPath>/mdw/logs/hdo/ukey/job/${getDate(0,'yyyyMMdd')}/HDO_JOB_LOG_#{LOG_JOB_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</jobLogPath>
+			<dataDate>${getDate(-1,'yyyyMMdd')}</dataDate>
+			<isAppend>false</isAppend>
+			<isPgLog>true</isPgLog>
+			<isJobLog>true</isJobLog>
+			<programListPath>${nameNode}/OOZIE/META/ukey_programlist</programListPath>
+		</log>
+		<ok to="chkCannotMakeKill" />
+		<error to="fail" />
+	</action>
+	<action name="hiveErrorLog">
+		<log xmlns="uri:oozie:log-action:0.5">
+			<logJobId>JU-DW-LOD-OOZ-#{LOG_INDEX}</logJobId>
+			<logJobName>HADOOP_JOB_MORD_GIFT</logJobName>
+			<logPgId>PU-DW-CHG-HIV-#{LOG_INDEX}</logPgId>
+			<logPgName>HIVE_PROGRAM_MORD_GIFT</logPgName>
+			<tableName>MORD_GIFT</tableName>
+			<oozieId>${wf:id()}</oozieId>
+			<success>N</success>
+			<errorCode>24</errorCode>
+			<errorMassage>Hive Excution error</errorMassage>
+			<jobCounterURL></jobCounterURL>
+			<jobCountActionName></jobCountActionName>
+			<pgLogPath>/mdw/logs/hdo/ukey/pgm/${getDate(0,'yyyyMMdd')}/HDO_PGM_LOG_#{LOG_PG_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</pgLogPath>
+			<jobLogPath>/mdw/logs/hdo/ukey/job/${getDate(0,'yyyyMMdd')}/HDO_JOB_LOG_#{LOG_JOB_ID}_${getDate(0,'yyyyMMddhhmmss')}.log</jobLogPath>
+			<dataDate>${getDate(-1,'yyyyMMdd')}</dataDate>
+			<isAppend>false</isAppend>
+			<isPgLog>true</isPgLog>
+			<isJobLog>true</isJobLog>
+			<programListPath>${nameNode}/OOZIE/META/ukey_programlist</programListPath>
+		</log>
+		<ok to="end" />
+		<error to="hiveKill" />
+	</action>
+
+	<kill name="chkCannotMakeKill">
+		<message>didn't make result chk file ,message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+	</kill>
+	<kill name="inputNotExistKill">
+		<message>not exist input file ,message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+	</kill>
+	<kill name="hiveKill">
+		<message>Hive failed, error	message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+	</kill>
+	<kill name="fail">
+		<message>error	message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+	</kill>
+	<end name="end" />
+</workflow-app>
