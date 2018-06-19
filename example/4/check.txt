@@ -47,3 +47,10 @@ CREATE TABLE IF NOT EXISTS example1
 STORED AS TEXTFILE;
 LOAD DATA LOCAL INPATH '/home/hdfs/hive/example/4/example1.json' OVERWRITE INTO TABLE example1;
 
+SELECT saleInfo.bookName FROM example1 WHERE statTime LIKE "2013071018%";
+
+SELECT saleInfo.bookName as bn, SUM(saleInfo.saleCount)
+FROM example1 
+GROUP BY saleInfo.bookName 
+ORDER BY bn;
+
