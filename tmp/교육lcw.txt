@@ -1,0 +1,309 @@
+CREATE EXTERNAL TABLE IF NOT EXISTS CARD_HISTORY (
+    TRANSACTION_DATE STRING,
+    TRANSACTION_ID STRING,
+    TRANSACTION_TYPE STRING,
+    CARD_NUMBER STRING,
+    CARD_OWNER STRING,
+    EXPIRE_DATE STRING,
+    AMOUNT INT,
+    MERCHANT_ID STRING,
+    LOCATION_X INT,
+    LOCATION_Y INT
+    )
+COMMENT 'Card History Table' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/tmp/table/card';
+
+-- 사용자 테이블 생성
+CREATE EXTERNAL TABLE IF NOT EXISTS USERS (
+    USER_ID STRING,
+    USER_NAME STRING,
+    AGE INT,
+    SEX STRING,
+    ADDRESS STRING
+	)
+COMMENT 'User Table' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/tmp/table/user';
+
+-- 물품 테이블 생성
+CREATE EXTERNAL TABLE IF NOT EXISTS MERCHANT (
+    MERCHANT_ID STRING,
+    MERCHANT_NAME STRING,
+    BUSINESS_TYPE STRING )
+COMMENT 'Merchant Table' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/tmp/table/merchant';
+
+
+load data local inpath '/home/hdfs/hive/sample_file/card.csv'     overwrite into TABLE CARD_HISTORY;
+load data local inpath '/home/hdfs/hive/sample_file/user.csv'     overwrite into TABLE USERS;
+load data local inpath '/home/hdfs/hive/sample_file/merchant.csv' overwrite into TABLE MERCHANT;
+
+select * from CARD_HISTORY;
+select * from USERS;
+select * from MERCHANT;
+
+  with aaa as (
+select a.TRANSACTION_DATE
+     , a.TRANSACTION_ID
+     , a.TRANSACTION_TYPE
+     , a.CARD_NUMBER
+     , a.CARD_OWNER
+     , a.EXPIRE_DATE
+     , a.AMOUNT
+     , a.MERCHANT_ID
+     , a.LOCATION_X
+     , a.LOCATION_Y
+     , b.USER_NAME
+     , b.AGE
+     , b.SEX
+     , b.ADDRESS
+     , c.MERCHANT_NAME
+     , c.BUSINESS_TYPE
+  from CARD_HISTORY a
+  join USERS b
+    on a.CARD_OWNER = b.USER_ID
+  join MERCHANT c
+    on a.MERCHANT_ID = c.MERCHANT_ID
+       ) a
+select c.MERCHANT_NAME, count(a.AMOUNT)
+  from CARD_HISTORY a
+  join MERCHANT c
+    on a.MERCHANT_ID = c.MERCHANT_ID
+ group by c.MERCHANT_NAME
+;
+select b.SEX, count(a.AMOUNT)
+  from CARD_HISTORY a
+  join USERS b
+    on a.CARD_OWNER = b.USER_ID
+ group by b.SEX
+;
+select b.AGE, count(a.AMOUNT)
+  from CARD_HISTORY a
+  join USERS b
+    on a.CARD_OWNER = b.USER_ID
+ group by b.AGE
+;
+
+
+
+create view if not exists v_airline as
+select year, month, airtime from hive_edu.airport limit 10;
+
+
+wget http://www.congiu.net/hive-json-serde/1.3.8/hdp23/json-serde-1.3.8-jar-with-dependencies.jar
+
+add jar /home/hdfs/hive/example/4/json-serde-1.3.8-jar-with-dependencies.jar;
+CREATE EXTERNAL TABLE hive_edu.json_1 (
+text string
+, number int
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+stored as textfile;
+
+load data local inpath '/home/hdfs/hive/example/4/test.json' into table hive_edu.json_1;
+
+{"one":true,"three":["red","yellow","orange"],"two":19.5,"four":"poop"}
+{"one":false,"three":["red","yellow","black"],"two":129.5,"four":"stars"}
+{"one":false,"three":["pink","gold"],"two":222.56,"four":"fiat"}
+
+CREATE EXTERNAL TABLE hive_edu.json_2 (
+one boolean
+, three array<string>
+, two double
+, four string
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+stored as textfile;
+
+load data local inpath '/home/hdfs/hive/example/4/example.json' into table hive_edu.json_2;
+
+
+[hdfs@sandbox-hdp 4]$ cat example1.json
+{"statTime":"20130710180059","bizCode":"BOOK","saleInfo":{"bookName":"book61","saleCount":749}}
+{"statTime":"20130710180158","bizCode":"BOOK","saleInfo":{"bookName":"book73","saleCount":333}}
+{"statTime":"20130710180257","bizCode":"BOOK","saleInfo":{"bookName":"book3","saleCount":864}}
+{"statTime":"20130710180356","bizCode":"BOOK","saleInfo":{"bookName":"book27","saleCount":607}}
+
+
+CREATE EXTERNAL TABLE hive_edu.json_3 (
+statTime string
+, bizCode string
+, saleInfo struct<bookName:string,saleCount:int>
+)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+stored as textfile;
+
+load data local inpath '/home/hdfs/hive/example/4/example1.json' into table hive_edu.json_3;
+
+card_history, merchant join
+
+create external table hive_edu.statistics_by_business_type(
+merchant_name string
+, sum_amount int
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+;
+
+insert overwrite table hive_edu.statistics_by_business_type
+select b.merchant_name
+     , sum(a.amount)
+  from hive_edu.card_history a
+  join hive_edu.merchant b
+    on a.merchant_id = b.merchant_id
+ group by
+       b.merchant_name
+;
+
+
+create table statistics_by_business_type(
+merchant_name varchar(100)
+, sum_amount int
+);
+
+sqoop export \
+--connect jdbc:mysql://sandbox-hdp.hortonworks.com:3306/hive \
+--username root \
+--password hadoop \
+--table statistics_by_business_type \
+--export-dir /apps/hive/warehouse/hive_edu.db/statistics_by_business_type
+
+
+create external table hive_edu.STATISTICS_BY_BUSINESS_SEX_AGE(
+sex string
+, age string
+, sum_amount int
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+;
+
+create table hive_edu.STATISTICS_BY_BUSINESS_SEX_AGE
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+as
+select b.sex
+     , b.age
+     , sum(a.amount)
+  from hive_edu.card_history a
+  join hive_edu.users b
+    on a.card_owner = b.user_id
+ group by
+       b.sex
+     , b.age
+;
+create table STATISTICS_BY_BUSINESS_SEX_AGE(
+sex varchar(100)
+, age varchar(100)
+, sum_amount int
+);
+
+sqoop export \
+--connect jdbc:mysql://sandbox-hdp.hortonworks.com:3306/hive \
+--username root \
+--password hadoop \
+--table STATISTICS_BY_BUSINESS_SEX_AGE \
+--export-dir /apps/hive/warehouse/hive_edu.db/statistics_by_business_sex_age
+
+
+
+sqoop import \
+--connect jdbc:mysql://sandbox-hdp.hortonworks.com:3306/hive \
+--driver com.mysql.jdbc.Driver \
+--username root \
+--password hadoop \
+--table TBLS \
+--target-dir /apps/hive/warehouse/hive_edu.db/hive_tbls
+
+-m 1             pk가 없을경우
+
+
+create external table hive_edu.hive_tbls(
+  TBL_ID               bigint
+, CREATE_TIME          int
+, DB_ID                bigint
+, LAST_ACCESS_TIME     int
+, OWNER                string
+, RETENTION            int
+, SD_ID                bigint
+, TBL_NAME             string
+, TBL_TYPE             string
+, VIEW_EXPANDED_TEXT   string
+, VIEW_ORIGINAL_TEXT   string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+location '/apps/hive/warehouse/hive_edu.db/hive_tbls'
+;
+analyze table hive_edu.hive_tbls compute statistics;
+select year, month, flightnum from airport_partition limit 11;
+
+use hive_edu;
+set hive.execution.engine=mr;
+drop index if exists idx_01_airport on airport;
+CREATE INDEX idx_01_airport
+ON TABLE airport (year, month, flightnum)
+AS 'COMPACT'
+WITH DEFERRED REBUILD
+;
+desc formatted hive_edu.hive_edu__airport_idx_01_airport__;
+drop index if exists idx_02_airport on airport;
+CREATE INDEX idx_02_airport
+ON TABLE airport (flightnum)
+AS 'BITMAP'
+WITH DEFERRED REBUILD
+;
+desc formatted hive_edu.hive_edu__airport_idx_02_airport__;
+drop index if exists idx_03_airport on airport;
+CREATE INDEX idx_03_airport
+ON TABLE airport (flightnum)
+AS 'BITMAP'
+WITH DEFERRED REBUILD
+STORED AS RCFILE
+;
+desc formatted hive_edu.hive_edu__airport_idx_03_airport__;
+ALTER INDEX idx_01_airport on airport REBUILD;
+show formatted index on airport;
+
+select /*+ index(idx_01_airport) */ year, month, flightnum
+from airport
+where year = '2008' and month = '1' and flightnum = '335'
+limit 11;
+
+
+중간파일 압축 설정
+set hive.exec.compress.intermediate=true;
+• 중간파일 압축 포맷 설정
+set mapred.map.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+• 최종파일 압축 설정
+set hive.exec.compress.output=true;
+• 최종파일 압축 방식 설정
+set mapred.output.compression.type=BLOCK;
+• 최종파일 압축 포맷 설정
+set mapred.output.compression.codec=org.apache.hadoop.io.compress.GzipCodec;
+
+set hive.exec.compress.intermediate=true;
+set mapred.map.output.compression.codec=org.apache.hadoop.io.compress.SnappyCodec;
+set hive.exec.compress.output=true;
+set mapred.output.compression.type=BLOCK;
+set mapred.output.compression.codec=org.apache.hadoop.io.compress.GzipCodec;
+
+CREATE TABLE airline_comp_gz_snappy_seq
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t'
+STORED AS SEQUENCEFILE
+AS SELECT * FROM airline;
+
+hadoop fs -du -s -h /hive_edu/airline
+hadoop fs -du -s -h /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq
+
+[hdfs@sandbox-hdp ~]$ hadoop fs -du -s -h /hive_edu/airline
+308.8 K  /hive_edu/airline
+[hdfs@sandbox-hdp ~]$ hadoop fs -du -s -h /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq
+129.3 K  /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq
+
+hadoop fs -ls /hive_edu/airline
+hadoop fs -ls /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq
+
+hadoop fs -tail /hive_edu/airline/airline.dat
+hadoop fs -tail /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq/000000_0
+
+hadoop fs -ls /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq
+hadoop fs –text /apps/hive/warehouse/hive_edu.db/airline_comp_gz_snappy_seq/000000_0
+
+oozie -job -oozie 
+
+http://sandbox-hdp.hortonworks.com:11000/oozie
+
+oozie jobs
