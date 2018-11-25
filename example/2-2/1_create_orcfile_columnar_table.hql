@@ -1,8 +1,8 @@
 use hive_edu;
 
-drop table orcfile_columnar;
+drop table orcfile_columnar1;
 
-CREATE EXTERNAL TABLE IF NOT EXISTS orcfile_columnar(
+CREATE EXTERNAL TABLE IF NOT EXISTS orcfile_columnar1(
 Year                 STRING,
 Month                STRING,
 DayofMonth           STRING,
@@ -34,6 +34,8 @@ SecurityDelay        STRING,
 LateAircraftDelay    STRING
 )
 COMMENT 'This is airport data compressed by orc type'
-STORED AS orc LOCATION '/hive_edu/orcfile_columnar';
+STORED AS orc LOCATION '/hive_edu/orcfile_columnar1'
+TBLPROPERTIES ("orc.compress"="NONE");
+
 
 
