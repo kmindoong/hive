@@ -6,8 +6,10 @@ wget http://archive.apache.org/dist/oozie/4.2.0/oozie-4.2.0.tar.gz
 tar zxvf oozie-4.2.0.tar.gz
 mkdir examples
 cp -R ~/oozie-4.2.0/examples/src/main/apps ./examples
-hadoop fs -mkdir -p /user/hdfs/examples/apps
 
+hadoop fs -mkdir -p /user/hdfs/examples/apps/hive
+
+cd examples/apps/hive
 
 # vi script.q
 USE xademo;
@@ -112,10 +114,11 @@ jobTracker=sandbox-hdp.hortonworks.com:8032
 queueName=default
 examplesRoot=examples
 oozie.use.system.libpath=true
-oozie.coord.application.path=${nameNode}/user/${user.name}/${examplesRoot}/apps/schedule
-start=2018-11-25T05:45Z
-end=2018-11-25T06:00Z
 workflowAppUri=${nameNode}/user/${user.name}/${examplesRoot}/apps/schedule
+oozie.coord.application.path=${nameNode}/user/${user.name}/${examplesRoot}/apps/schedule
+start=2018-11-26T15:55Z
+end=2018-11-26T16:30Z
+
 
 
 # vi workflow.xml
@@ -153,7 +156,7 @@ cd /home/hdfs/examples/apps/hive/coordinator
 
 hadoop fs -mkdir -p /user/hdfs/examples/apps/schedule
 
-hadoop fs -put test.q workflow.xml examples/apps/schedule
+hadoop fs -put test.q workflow.xml coordinator.xml examples/apps/schedule
 
-oozie job -oozie http://sandbox-hdp.hortonworks.com:11000/oozie -config /home/hdfs/examples/apps/hive/coordinator/job_co.properties -run
+oozie job -oozie http://sandbox-hdp.hortonworks.com:11000/oozie -config /home/hdfs/examples/apps/hive/coordinator/job.properties -run
 
