@@ -1,0 +1,6 @@
+### window )  C:\Windows\System32\drivers\etc\hosts 파일에 아래 내용 추가
+169.56.124.213 bp01.hadoop.co.kr bp01
+169.56.124.222 bp02.hadoop.co.kr bp02
+169.56.124.22 bp03.hadoop.co.kr bp03
+169.56.124.206 bp04.hadoop.co.kr bp04
+169.56.74.94 bp05.hadoop.co.kr bp05
