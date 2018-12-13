@@ -1,0 +1,73 @@
+<workflow-app xmlns="uri:oozie:workflow:0.2" name="mini-oozie">
+    <start to="create-table"/>
+
+    <action name="create-table">
+        <hive xmlns="uri:oozie:hive-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <script>create-table.hql</script>
+        </hive>
+        <ok to="load-data"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="load-data">
+        <hive xmlns="uri:oozie:hive-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <script>load-data.hql</script>
+        </hive>
+        <ok to="hive-sts"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="hive-sts">
+        <hive xmlns="uri:oozie:hive-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <script>sts-table.hql</script>
+        </hive>
+        <ok to="export-sts"/>
+        <error to="fail"/>
+    </action>
+
+    <action name="export-sts">
+        <sqoop xmlns="uri:oozie:sqoop-action:0.2">
+            <job-tracker>${jobTracker}</job-tracker>
+            <name-node>${nameNode}</name-node>
+            <configuration>
+                <property>
+                    <name>mapred.job.queue.name</name>
+                    <value>${queueName}</value>
+                </property>
+            </configuration>
+            <command>export --connect jdbc:mysql://bp01.hadoop.co.kr:3306/mini00 --username root --table STS_BY_COUNTRY --export-dir /mini00/sts/STS_BY_COUNTRY</command>
+        </sqoop>
+        <ok to="end"/>
+        <error to="fail"/>
+    </action>    
+
+    <kill name="fail">
+        <message>Hive failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message>
+    </kill>
+    <end name="end"/>
+</workflow-app>
+
